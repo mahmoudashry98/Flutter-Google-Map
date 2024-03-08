@@ -4,5 +4,6 @@
     "titleBar.activeBackground": "#1B4928",
     "titleBar.activeForeground": "#F5FBF7"
   },
-  "java.compile.nullAnalysis.mode": "automatic"
+  "java.compile.nullAnalysis.mode": "automatic",
+  "cSpell.words": ["Polyline", "polylines"]
 }
