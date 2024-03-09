@@ -139,12 +139,12 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
         strokeWidth: 1);
 
     polygons.add(polygon);
-  }
+}
 
   void intiCircles() {
     Circle circle = Circle(
       circleId: const CircleId("circle1"),
-      center: const LatLng(25.20930688745014, 55.26080765355656),
+    center: const LatLng(25.20930688745014, 55.26080765355656),
       fillColor: Colors.black.withOpacity(0.1),
       radius: 1000,
       strokeColor: Colors.red,
