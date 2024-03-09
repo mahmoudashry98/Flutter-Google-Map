@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_map/models/place_model.dart';
+import 'package:flutter_google_map/utils/location_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 
 class CustomGoogleMap extends StatefulWidget {
   const CustomGoogleMap({super.key});
@@ -11,14 +13,10 @@ class CustomGoogleMap extends StatefulWidget {
 
 class _CustomGoogleMapState extends State<CustomGoogleMap> {
   late CameraPosition initialCameraPosition;
-  late GoogleMapController mapController;
+  GoogleMapController? mapController;
+  late LocationService locationService;
 
-  Set<Marker> markers = {
-    const Marker(
-      markerId: MarkerId("marker1"),
-      position: LatLng(25.213654264448373, 55.27619180438972),
-    ),
-  };
+  Set<Marker> markers = {};
 
   Set<Polyline> polylines = {};
 
@@ -26,22 +24,28 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
 
   Set<Circle> circles = {};
 
+  late Location location;
+
+  bool isFirstCall = true;
+
   @override
   void initState() {
+    locationService = LocationService();
     initialCameraPosition = const CameraPosition(
-      zoom: 10.0,
+      zoom: 20,
       target: LatLng(25.213654264448373, 55.27619180438972),
     );
     initMarkers();
     initPolygon();
     initPolyLines();
     intiCircles();
+    updateMyLocation();
     super.initState();
   }
 
   @override
   void dispose() {
-    mapController.dispose();
+    mapController!.dispose();
     super.dispose();
   }
 
@@ -51,7 +55,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
       children: [
         GoogleMap(
           circles: circles,
-          polylines: polylines,
+          // polylines: polylines,
           polygons: polygons,
           markers: markers,
           onMapCreated: (GoogleMapController controller) {
@@ -59,24 +63,24 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
           },
           initialCameraPosition: initialCameraPosition,
         ),
-        Positioned(
-          bottom: 20,
-          left: 80,
-          right: 80,
-          child: ElevatedButton(
-            onPressed: () {
-              mapController.animateCamera(
-                CameraUpdate.newCameraPosition(
-                  const CameraPosition(
-                    target: LatLng(30.03233440258355, 30.98290617374865),
-                    zoom: 10.0,
-                  ),
-                ),
-              );
-            },
-            child: const Text("Change Location"),
-          ),
-        ),
+        // Positioned(
+        //   bottom: 20,
+        //   left: 80,
+        //   right: 80,
+        //   child: ElevatedButton(
+        //     onPressed: () {
+        //       mapController!.animateCamera(
+        //         CameraUpdate.newCameraPosition(
+        //           const CameraPosition(
+        //             target: LatLng(30.03233440258355, 30.98290617374865),
+        //             zoom: 10.0,
+        //           ),
+        //         ),
+        //       );
+        //     },
+        //     child: const Text("Change Location"),
+        //   ),
+        // ),
       ],
     );
   }
@@ -139,17 +143,53 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
         strokeWidth: 1);
 
     polygons.add(polygon);
-}
+  }
 
   void intiCircles() {
     Circle circle = Circle(
       circleId: const CircleId("circle1"),
-    center: const LatLng(25.20930688745014, 55.26080765355656),
+      center: const LatLng(25.20930688745014, 55.26080765355656),
       fillColor: Colors.black.withOpacity(0.1),
       radius: 1000,
       strokeColor: Colors.red,
       strokeWidth: 1,
     );
     circles.add(circle);
+  }
+
+  void updateMyLocation() async {
+    await locationService.checkAndRequestLocationService();
+    var hasPermission =
+        await locationService.checkAndRequestLocationPermission();
+    if (hasPermission) {
+      locationService.getRealTimeLocationData((locationData) {
+        setMyLocationMarker(locationData);
+        updateMyCamera(locationData);
+      });
+    }
+  }
+
+  void updateMyCamera(LocationData locationData) {
+    if (isFirstCall) {
+      CameraPosition cameraPosition = CameraPosition(
+        target: LatLng(locationData.latitude!, locationData.longitude!),
+        zoom: 17,
+      );
+      mapController
+          ?.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+
+      isFirstCall = false;
+    } else {
+      mapController?.animateCamera(CameraUpdate.newLatLng(
+          LatLng(locationData.latitude!, locationData.longitude!)));
+    }
+  }
+
+  void setMyLocationMarker(LocationData locationData) {
+    var myMarkers = Marker(
+        markerId: const MarkerId('My_Location_marker'),
+        position: LatLng(locationData.latitude!, locationData.longitude!));
+    markers.add(myMarkers);
+    setState(() {});
   }
 }
