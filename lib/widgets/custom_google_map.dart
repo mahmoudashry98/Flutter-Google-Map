@@ -1,12 +1,14 @@
-import 'dart:developer';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_google_map/core/utils/google_maps_place_service.dart';
+import 'package:flutter_google_map/core/utils/map_services.dart';
 import 'package:flutter_google_map/core/widgets/custom_list_view.dart';
 import 'package:flutter_google_map/core/widgets/custom_text_field.dart';
 import 'package:flutter_google_map/models/place_auto_complete_model/place_auto_complete_model.dart';
 import 'package:flutter_google_map/core/utils/location_service.dart';
 import 'package:flutter_google_map/models/place_model.dart';
+import 'package:flutter_google_map/models/routes_model/routes_model.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:uuid/uuid.dart';
@@ -21,9 +23,12 @@ class CustomGoogleMap extends StatefulWidget {
 class _CustomGoogleMapState extends State<CustomGoogleMap> {
   late CameraPosition initialCameraPosition;
   late GoogleMapController mapController;
-  late LocationService locationService;
-  late GoogleMapPlaceService googleMapPlaceService;
+  late MapServices mapServices;
   late TextEditingController textEditingController;
+  late LatLng currentLocation;
+  late LatLng destination;
+
+  Timer? debounce;
 
   //ToDo the session Token make disconnecting between every session when make the request like this(make search and choose the location service this all session if you need to make search again it will generate the new session token)
   String? sessionToken;
@@ -36,18 +41,16 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   late Location location;
   List<PlaceAutoCompleteModel> placesAutoComplete = [];
   bool isFirstCall = true;
-
   @override
   void initState() {
-    locationService = LocationService();
-    googleMapPlaceService = GoogleMapPlaceService();
+    mapServices = MapServices();
     textEditingController = TextEditingController();
     uuid = const Uuid();
     fetchPredictions();
     initialCameraPosition = const CameraPosition(
       target: LatLng(0, 0),
     );
-    // initMarkers();
+    initMarkers();
     // initPolygon();
     // initPolyLines();
     // intiCircles();
@@ -56,31 +59,30 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     super.initState();
   }
 
-  void fetchPredictions() {
-    textEditingController.addListener(() async {
-      sessionToken ??= uuid.v4();
-      log('$sessionToken');
-      
-      if (textEditingController.text.isNotEmpty) {
-        var result = await googleMapPlaceService.getPredictions(
-          input: textEditingController.text,
-          sessionToken: sessionToken!,
-        );
-        placesAutoComplete.clear();
-        placesAutoComplete.addAll(result);
-        setState(() {});
-      } else {
-        placesAutoComplete.clear();
-        setState(() {});
-      }
-    });
-  }
-
   @override
   void dispose() {
     mapController.dispose();
     textEditingController.dispose();
+    debounce?.cancel();
     super.dispose();
+  }
+
+  void fetchPredictions() {
+    textEditingController.addListener(() async {
+      if (debounce?.isActive ?? false) {
+        debounce?.cancel();
+      }
+      debounce = Timer(const Duration(milliseconds: 100), () async {
+        sessionToken ??= uuid.v4();
+        await mapServices.getPredictions(
+          input: textEditingController.text,
+          sessionToken: sessionToken!,
+          placesAutoComplete: placesAutoComplete,
+        );
+      });
+
+      setState(() {});
+    });
   }
 
   @override
@@ -90,12 +92,12 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
         GoogleMap(
           zoomControlsEnabled: false,
           circles: circles,
-          // polylines: polylines,
-          polygons: polygons,
+          polylines: polylines,
+          // polygons: polygons,
           markers: markers,
           onMapCreated: (GoogleMapController controller) {
             mapController = controller;
-            updateMyLocation();
+            updateCurrentLocation();
           },
           initialCameraPosition: initialCameraPosition,
         ),
@@ -110,13 +112,30 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
               ),
               CustomListView(
                 places: placesAutoComplete,
-                service: googleMapPlaceService,
-                onSelectPlace: (placeDetailsModel) {
+                mapServices: mapServices,
+                onSelectPlace: (placeDetailsModel) async {
                   textEditingController.clear();
                   places.clear();
                   sessionToken = null;
                   setState(() {});
-                  log('${placeDetailsModel.adrAddress}');
+                  destination = LatLng(
+                    placeDetailsModel.geometry!.location!.lat!,
+                    placeDetailsModel.geometry!.location!.lng!,
+                  );
+
+                  var points = await mapServices.getRouteData(
+                    currentLocation: currentLocation,
+                    destination: destination,
+                  );
+                  setState(() {});
+                  mapServices.displayRoute(
+                    points,
+                    polylines: polylines,
+                    mapController: mapController,
+                  );
+
+                  setState(() {});
+                  // log('${placeDetailsModel.adrAddress}');
                 },
               )
             ],
@@ -198,24 +217,22 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     circles.add(circle);
   }
 
-  void updateMyLocation() async {
+  void updateCurrentLocation() async {
     try {
-      var locationData = await locationService.getLocationData();
-      CameraPosition myCurrentCameraLocation = CameraPosition(
-        target: LatLng(locationData.latitude!, locationData.longitude!),
-        zoom: 17,
-      );
-      mapController.animateCamera(
-          CameraUpdate.newCameraPosition(myCurrentCameraLocation));
-      setMyLocationMarker(locationData);
+      currentLocation = await mapServices.updateCurrentLocation(
+          mapController: mapController, markers: markers);
+      setState(() {});
+    } on LocationServiceException catch (e) {
+      // log(e.toString());
+    } on LocationPermissionException catch (e) {
+      //ToDo:
     } catch (e) {
-      log(e.toString());
+      // log(e.toString());
     }
   }
 
   void updateMyCamera(LocationData locationData) {
-    LatLng currentLocation =
-        LatLng(locationData.latitude!, locationData.longitude!);
+    currentLocation = LatLng(locationData.latitude!, locationData.longitude!);
     if (isFirstCall) {
       CameraPosition cameraPosition = CameraPosition(
         target: currentLocation,
@@ -230,11 +247,16 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     }
   }
 
-  void setMyLocationMarker(LocationData locationData) {
-    var myMarkers = Marker(
-        markerId: const MarkerId('My_Location_marker'),
-        position: LatLng(locationData.latitude!, locationData.longitude!));
-    markers.add(myMarkers);
-    setState(() {});
+  List<LatLng> getDecodedRoute(
+      PolylinePoints polylinePoints, RoutesModel routesData) {
+    List<PointLatLng> result = polylinePoints
+        .decodePolyline(routesData.routes!.first.polyline!.encodedPolyline!);
+
+    List<LatLng> points = result
+        .map(
+          (point) => LatLng(point.latitude, point.longitude),
+        )
+        .toList();
+    return points;
   }
 }

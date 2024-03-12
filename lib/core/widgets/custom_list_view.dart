@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_map/core/utils/google_maps_place_service.dart';
+import 'package:flutter_google_map/core/utils/map_services.dart';
 import 'package:flutter_google_map/models/place_auto_complete_model/place_auto_complete_model.dart';
 import 'package:flutter_google_map/models/place_details_model/place_details_model.dart';
 
 class CustomListView extends StatelessWidget {
   final List<PlaceAutoCompleteModel> places;
-  final GoogleMapPlaceService service;
+  final MapServices mapServices;
   final void Function(PlaceDetailsModel) onSelectPlace;
   const CustomListView({
     super.key,
     required this.places,
-    required this.service,
+    required this.mapServices,
     required this.onSelectPlace,
   });
 
@@ -44,11 +45,13 @@ class CustomListView extends StatelessWidget {
                 return ListTile(
                   title: Text(places[index].description!),
                   onTap: () async {
-                    var placeSelect = await service.getPlaceDetails(
-                      placeId: places[index].placeId!.toString(),
-                    );
-
+                    var placeSelect = await mapServices.getPlaceDetails(
+                        placeId: places[index].placeId!);
                     onSelectPlace(placeSelect);
+                    FocusScopeNode currentFocus = FocusScope.of(context);
+                    if (!currentFocus.hasPrimaryFocus) {
+                      currentFocus.unfocus();
+                    }
                   },
                   leading: const Icon(Icons.location_on),
                   trailing: const Icon(Icons.arrow_forward),

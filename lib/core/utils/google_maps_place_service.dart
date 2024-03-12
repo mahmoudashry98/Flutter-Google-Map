@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_google_map/models/place_auto_complete_model/place_auto_complete_model.dart';
 import 'package:flutter_google_map/models/place_details_model/place_details_model.dart';
 
-class GoogleMapPlaceService {
+class PlaceService {
   final String baseUrl = 'https://maps.googleapis.com/maps/api/place';
   final String apiKey = 'AIzaSyDKC-R8dpezg5j7WXe578Iy4L5CPBVR9G4';
   final Dio dio = Dio();
