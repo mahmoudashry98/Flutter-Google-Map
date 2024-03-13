@@ -17,10 +17,10 @@ class PlaceModel {
 List<PlaceModel> places = [
   PlaceModel(
       id: 1,
-      name: "Lagos",
+      name: "مسجد جميرا الكبير",
       image: "assets/images/lagos.jpg",
-      address: "Lagos, Nigeria",
-      latLang: const LatLng(25.230391907166233, 55.26471287335303)),
+      address: "Dubai",
+      latLang: const LatLng(25.233915364380163, 55.265491028570246)),
   PlaceModel(
       id: 2,
       name: "Abuja",

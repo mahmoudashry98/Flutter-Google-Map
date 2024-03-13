@@ -95,7 +95,7 @@ class MapServices {
     LatLngBounds bounds = getLatLngBounds(points);
     mapController.animateCamera(CameraUpdate.newLatLngBounds(
       bounds,
-      25,
+      100,
     ));
   }
 

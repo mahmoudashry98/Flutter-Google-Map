@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 class CustomTextField extends StatelessWidget {
-  const CustomTextField({super.key, required this.textEditingController});
+  const CustomTextField({super.key, required this.textEditingController,required this.currentFocus});
   final TextEditingController textEditingController;
+  final FocusScopeNode currentFocus;
   @override
   Widget build(BuildContext context) {
     return TextField(

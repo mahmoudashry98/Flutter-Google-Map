@@ -27,6 +27,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   late TextEditingController textEditingController;
   late LatLng currentLocation;
   late LatLng destination;
+  
 
   Timer? debounce;
 
@@ -53,7 +54,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     initMarkers();
     // initPolygon();
     // initPolyLines();
-    // intiCircles();
+    intiCircles();
     // updateMyLocation();
 
     super.initState();
@@ -79,14 +80,14 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
           sessionToken: sessionToken!,
           placesAutoComplete: placesAutoComplete,
         );
+        setState(() {});
       });
-
-      setState(() {});
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    FocusScopeNode currentFocus = FocusScope.of(context);
     return Stack(
       children: [
         GoogleMap(
@@ -109,8 +110,10 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
             children: [
               CustomTextField(
                 textEditingController: textEditingController,
+                currentFocus: currentFocus,
               ),
               CustomListView(
+                currentFocus: currentFocus,
                 places: placesAutoComplete,
                 mapServices: mapServices,
                 onSelectPlace: (placeDetailsModel) async {
