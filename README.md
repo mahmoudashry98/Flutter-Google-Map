@@ -56,15 +56,15 @@ Project Link: https://github.com/mahmoudashry98/Flutter-Google-Map
 ## Screenshots and Vidoe
 
 ### App Interface
-![App Interface](images/app_interface.jpg)
+![Screenshot_20240313-223116](https://github.com/mahmoudashry98/Flutter-Google-Map/assets/83143927/f455bebd-3667-4981-904f-f57990046593)
 
-### Live Tracking Feature
-[![Live Tracking Feature](images/live_tracking_thumbnail.jpg)](https://youtube.com/link_to_live_tracking_demo)
 
-For more details on how the live tracking feature works, check out our [demo video](https://youtube.com/link_to_live_tracking_demo).
+
+
+For more details on how the live tracking feature works, check out our https://youtu.be/60gdWfcwOEQ
 
 ### Access Zones Visualization
-![Access Zones](images/access_zones.jpg)
+![Screenshot_20240313-213419](https://github.com/mahmoudashry98/Flutter-Google-Map/assets/83143927/9b710fb7-188b-412a-a353-a20ad322ea95)
 
 
 
